@@ -223,13 +223,13 @@ if uploaded_file is not None:
     with col1:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.subheader("🖼️ Originalbild")
-        st.image(image, use_container_width=True)
+        st.image(image, use_column_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.subheader("🎯 KI-Erkennung")
-        st.image(result_img, use_container_width=True)
+        st.image(result_img, use_column_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     # ---------------------------------------------------
@@ -263,9 +263,11 @@ if uploaded_file is not None:
         """, unsafe_allow_html=True)
 
     with c3:
+        unique_classes = len(set([int(box.cls[0]) for box in boxes]))
+
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-number">{len(set([int(box.cls[0]) for box in boxes]))}</div>
+            <div class="metric-number">{unique_classes}</div>
             <div class="metric-label">Klassen erkannt</div>
         </div>
         """, unsafe_allow_html=True)
@@ -288,11 +290,13 @@ if uploaded_file is not None:
 
     if len(data) > 0:
         df = pd.DataFrame(data)
+
         st.dataframe(
             df,
             use_container_width=True,
             hide_index=True
         )
+
     else:
         st.warning("Keine Objekte erkannt.")
 
