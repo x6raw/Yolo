@@ -3,178 +3,276 @@ from PIL import Image
 import numpy as np
 from ultralytics import YOLO
 import pandas as pd
+import time
 
-# ---------------------------
-# Seitenkonfiguration
-# ---------------------------
+# ---------------------------------------------------
+# PAGE CONFIG
+# ---------------------------------------------------
 st.set_page_config(
-    page_title="YOLO Object Detection",
+    page_title="YOLO AI Vision",
     page_icon="🤖",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# ---------------------------
-# Custom CSS Design
-# ---------------------------
+# ---------------------------------------------------
+# CUSTOM CSS
+# ---------------------------------------------------
 st.markdown("""
 <style>
-    .main {
-        background-color: #0f172a;
-        color: white;
-    }
 
-    .title {
-        font-size: 3rem;
-        font-weight: bold;
-        text-align: center;
-        color: #38bdf8;
-        margin-bottom: 10px;
-    }
+html, body, [class*="css"] {
+    font-family: 'Segoe UI', sans-serif;
+}
 
-    .subtitle {
-        text-align: center;
-        color: #cbd5e1;
-        font-size: 1.1rem;
-        margin-bottom: 30px;
-    }
+.stApp {
+    background: linear-gradient(
+        135deg,
+        #0f172a 0%,
+        #111827 40%,
+        #1e293b 100%
+    );
+    color: white;
+}
 
-    .stButton>button {
-        background-color: #38bdf8;
-        color: white;
-        border-radius: 12px;
-        border: none;
-        padding: 10px 20px;
-        font-size: 16px;
-        transition: 0.3s;
-    }
+/* HERO */
+.hero {
+    padding: 40px;
+    border-radius: 24px;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 30px;
+    text-align: center;
+    box-shadow: 0px 10px 40px rgba(0,0,0,0.3);
+}
 
-    .stButton>button:hover {
-        background-color: #0ea5e9;
-        transform: scale(1.03);
-    }
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 10px;
+}
 
-    .box {
-        background-color: #1e293b;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0px 4px 15px rgba(0,0,0,0.3);
-    }
+.hero-sub {
+    font-size: 1.2rem;
+    color: #cbd5e1;
+}
 
-    .metric-card {
-        background: #1e293b;
-        padding: 15px;
-        border-radius: 12px;
-        text-align: center;
-        color: white;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
-    }
+/* CARDS */
+.card {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(16px);
+    border-radius: 22px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0px 8px 30px rgba(0,0,0,0.25);
+}
+
+/* METRIC */
+.metric-card {
+    padding: 25px;
+    border-radius: 20px;
+    text-align: center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+}
+
+.metric-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #38bdf8;
+}
+
+.metric-label {
+    color: #cbd5e1;
+    font-size: 1rem;
+}
+
+/* BUTTON */
+.stButton > button {
+    width: 100%;
+    border-radius: 15px;
+    height: 3rem;
+    border: none;
+    background: linear-gradient(90deg,#0ea5e9,#38bdf8);
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    transition: 0.3s;
+}
+
+.stButton > button:hover {
+    transform: scale(1.02);
+    box-shadow: 0px 0px 20px rgba(56,189,248,0.5);
+}
+
+/* SIDEBAR */
+section[data-testid="stSidebar"] {
+    background: #0f172a;
+    border-right: 1px solid rgba(255,255,255,0.08);
+}
+
+/* FILE UPLOADER */
+[data-testid="stFileUploader"] {
+    background: rgba(255,255,255,0.04);
+    padding: 20px;
+    border-radius: 20px;
+}
+
+/* TABLE */
+[data-testid="stDataFrame"] {
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.footer {
+    text-align:center;
+    color:#94a3b8;
+    margin-top:40px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------------------
-# Titel
-# ---------------------------
-st.markdown('<div class="title">🤖 YOLO Object Detection</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="subtitle">Lade ein Bild hoch und erkenne Objekte mit YOLOv8</div>',
-    unsafe_allow_html=True
-)
+# ---------------------------------------------------
+# HERO SECTION
+# ---------------------------------------------------
+st.markdown("""
+<div class="hero">
+    <div class="hero-title">🤖 YOLO AI Vision</div>
+    <div class="hero-sub">
+        Moderne Object Detection mit YOLOv8 & Streamlit
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-# ---------------------------
-# Modell laden
-# ---------------------------
+# ---------------------------------------------------
+# MODEL LOAD
+# ---------------------------------------------------
 @st.cache_resource
 def load_model():
-    return YOLO("yolov8n.pt")  # eigenes Modell möglich
+    return YOLO("yolov8n.pt")
 
 model = load_model()
 
-# ---------------------------
-# Sidebar
-# ---------------------------
+# ---------------------------------------------------
+# SIDEBAR
+# ---------------------------------------------------
 with st.sidebar:
-    st.header("⚙️ Einstellungen")
+
+    st.title("⚙️ Einstellungen")
 
     conf_threshold = st.slider(
         "Confidence Threshold",
-        min_value=0.1,
-        max_value=1.0,
-        value=0.4,
-        step=0.05
+        0.1,
+        1.0,
+        0.25,
+        0.05
     )
 
     st.markdown("---")
-    st.info("💡 Tipp: Nutze hochauflösende Bilder für bessere Ergebnisse.")
 
-# ---------------------------
-# File Upload
-# ---------------------------
+    st.markdown("""
+    ### 📌 Tipps
+    
+    - Nutze hochauflösende Bilder
+    - Personen & Fahrzeuge funktionieren sehr gut
+    - Niedriger Threshold = mehr Erkennungen
+    """)
+
+    st.markdown("---")
+
+    st.success("✅ Modell geladen")
+
+# ---------------------------------------------------
+# UPLOAD
+# ---------------------------------------------------
 uploaded_file = st.file_uploader(
     "📤 Bild hochladen",
     type=["jpg", "jpeg", "png"]
 )
 
-# ---------------------------
-# Verarbeitung
-# ---------------------------
+# ---------------------------------------------------
+# MAIN
+# ---------------------------------------------------
 if uploaded_file is not None:
 
-    image = Image.open(uploaded_file)
+    image = Image.open(uploaded_file).convert("RGB")
 
-    # Layout mit zwei Spalten
+    # Animation
+    with st.spinner("🧠 KI analysiert das Bild..."):
+        time.sleep(1)
+
+        img_array = np.array(image)
+
+        results = model.predict(
+            source=img_array,
+            conf=conf_threshold,
+            save=False
+        )
+
+    result_img = results[0].plot()
+
+    # ---------------------------------------------------
+    # IMAGE DISPLAY
+    # ---------------------------------------------------
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("### 🖼️ Originalbild")
-        st.image(image, use_column_width=True)
-
-    # Bild in numpy konvertieren
-    img_array = np.array(image)
-
-    # Vorhersage
-    results = model.predict(img_array, conf=conf_threshold)
-
-    # Ergebnisbild
-    result_img = results[0].plot()
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader("🖼️ Originalbild")
+        st.image(image, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
-        st.markdown("### 🎯 Erkanntes Bild")
-        st.image(result_img, use_column_width=True)
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader("🎯 KI-Erkennung")
+        st.image(result_img, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # ---------------------------
-    # Statistiken
-    # ---------------------------
+    # ---------------------------------------------------
+    # STATS
+    # ---------------------------------------------------
     boxes = results[0].boxes
-
-    st.markdown("## 📊 Analyse")
-
     total_objects = len(boxes)
-
-    c1, c2 = st.columns(2)
-
-    with c1:
-        st.markdown(f"""
-        <div class="metric-card">
-            <h2>{total_objects}</h2>
-            <p>Erkannte Objekte</p>
-        </div>
-        """, unsafe_allow_html=True)
 
     avg_conf = 0
     if total_objects > 0:
         avg_conf = np.mean([float(box.conf[0]) for box in boxes])
 
-    with c2:
+    st.markdown("## 📊 Analyse")
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
         st.markdown(f"""
         <div class="metric-card">
-            <h2>{avg_conf:.2f}</h2>
-            <p>Durchschnittliche Confidence</p>
+            <div class="metric-number">{total_objects}</div>
+            <div class="metric-label">Objekte erkannt</div>
         </div>
         """, unsafe_allow_html=True)
 
-    # ---------------------------
-    # Tabellenansicht
-    # ---------------------------
+    with c2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-number">{avg_conf:.2f}</div>
+            <div class="metric-label">Ø Confidence</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-number">{len(set([int(box.cls[0]) for box in boxes]))}</div>
+            <div class="metric-label">Klassen erkannt</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # ---------------------------------------------------
+    # OBJECT TABLE
+    # ---------------------------------------------------
     st.markdown("## 📋 Erkannte Objekte")
 
     data = []
@@ -185,20 +283,25 @@ if uploaded_file is not None:
 
         data.append({
             "Objekt": model.names[cls_id],
-            "Confidence": f"{conf:.2f}"
+            "Confidence": round(conf, 2)
         })
 
     if len(data) > 0:
         df = pd.DataFrame(data)
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(
+            df,
+            use_container_width=True,
+            hide_index=True
+        )
     else:
         st.warning("Keine Objekte erkannt.")
 
-# ---------------------------
-# Footer
-# ---------------------------
-st.markdown("---")
-st.markdown(
-    "<center>Erstellt mit ❤️ und Streamlit + YOLOv8</center>",
-    unsafe_allow_html=True
-)
+# ---------------------------------------------------
+# FOOTER
+# ---------------------------------------------------
+st.markdown("""
+<div class="footer">
+    Entwickelt mit ❤️ | Streamlit + YOLOv8
+</div>
+""", unsafe_allow_html=True)
+
